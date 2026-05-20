@@ -11,6 +11,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "D" },
   { href: "/projects", label: "Projects", icon: "P" },
   { href: "/tasks", label: "Tasks", icon: "T" },
+  { href: "/board", label: "Board", icon: "B" },
   { href: "/activity", label: "Activity", icon: "A" },
   { href: "/settings", label: "Settings", icon: "S" },
 ]

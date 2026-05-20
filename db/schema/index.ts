@@ -164,6 +164,25 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   }),
 }))
 
+export const projectMembers = pgTable("project_members", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  projectId: text("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").notNull().default("member"),
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+})
+
+export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectMembers.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [projectMembers.userId],
+    references: [users.id],
+  }),
+}))
+
 export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
   performedBy: one(users, {
     fields: [activityLogs.performedById],

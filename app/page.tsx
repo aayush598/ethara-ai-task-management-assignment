@@ -92,12 +92,12 @@ function DashboardMockup() {
     <div className="relative w-full max-w-3xl mx-auto">
       {/* Browser shell */}
       <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-[0_32px_80px_rgba(15,23,42,0.14)] bg-white">
-        {/* Title bar */}
-        <div className="flex items-center gap-3 px-5 py-3.5 bg-slate-50 border-b border-slate-200">
+        {/* Title bar - enhanced with hover effects */}
+        <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-b from-slate-50 to-slate-100 border-b border-slate-200">
           <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-rose-400" />
-            <div className="w-3 h-3 rounded-full bg-amber-400" />
-            <div className="w-3 h-3 rounded-full bg-emerald-400" />
+            <div className="w-3 h-3 rounded-full bg-rose-400 hover:bg-rose-500 cursor-pointer transition-all duration-200 hover:scale-110" />
+            <div className="w-3 h-3 rounded-full bg-amber-400 hover:bg-amber-500 cursor-pointer transition-all duration-200 hover:scale-110" />
+            <div className="w-3 h-3 rounded-full bg-emerald-400 hover:bg-emerald-500 cursor-pointer transition-all duration-200 hover:scale-110" />
           </div>
           <div className="flex-1 flex justify-center">
             <div className="flex items-center gap-2 bg-white rounded-lg px-4 py-1.5 border border-slate-200 text-xs font-mono text-slate-500 shadow-sm">
@@ -170,18 +170,20 @@ function DashboardMockup() {
         </div>
       </div>
 
-      {/* Floating badges */}
-      <div className="absolute -top-5 -right-5 flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 shadow-lg shadow-slate-200/80 animate-float-a">
+{/* Floating badges - enhanced with hover */}
+      <div className="absolute -top-5 -right-5 flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 shadow-lg shadow-slate-200/80 animate-float-a hover:scale-105 hover:shadow-xl transition-all duration-300 cursor-pointer group">
         <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-[9px] font-bold text-white">AK</div>
         <div>
-          <p className="text-[10px] font-semibold text-slate-800">Evaluation submitted</p>
-          <p className="text-[9px] text-slate-400 font-mono">Score: 4.8 · Safety</p>
+          <p className="text-[10px] font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors">Evaluation submitted</p>
+          <p className="text-[9px] text-slate-400 font-mono">Score: 4.8 - Safety</p>
         </div>
         <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
       </div>
-      <div className="absolute -bottom-5 -left-4 flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 shadow-lg shadow-slate-200/80 animate-float-b">
-        <svg className="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
-        <p className="text-[10px] font-semibold text-slate-700">AI suggested priority: <span className="text-rose-600">High</span></p>
+      <div className="absolute -bottom-5 -left-4 flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 shadow-lg shadow-slate-200/80 animate-float-b hover:scale-105 hover:shadow-xl transition-all duration-300 cursor-pointer group">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center">
+          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+        </div>
+        <p className="text-[10px] font-semibold text-slate-700 group-hover:text-indigo-700 transition-colors">AI priority: <span className="text-rose-600 font-bold">High</span></p>
       </div>
     </div>
   );
@@ -190,39 +192,57 @@ function DashboardMockup() {
 /* ── Workflow diagram ── */
 function WorkflowDiagram() {
   const steps = [
-    { label: "Admin Creates Project", icon: "🗂", color: "bg-indigo-100 border-indigo-300 text-indigo-700", dot: "bg-indigo-500" },
-    { label: "Tasks Assigned to Reviewers", icon: "👥", color: "bg-blue-100 border-blue-300 text-blue-700", dot: "bg-blue-500" },
-    { label: "Evaluation Submitted", icon: "✅", color: "bg-violet-100 border-violet-300 text-violet-700", dot: "bg-violet-500" },
-    { label: "QA Review & Approval", icon: "🔍", color: "bg-emerald-100 border-emerald-300 text-emerald-700", dot: "bg-emerald-500" },
-    { label: "Analytics & Export", icon: "📊", color: "bg-amber-100 border-amber-300 text-amber-700", dot: "bg-amber-500" },
+    { label: "Create Project", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>, color: "bg-indigo-100 border-indigo-300 text-indigo-700", dot: "bg-indigo-500", mockup: "project" },
+    { label: "Assign Tasks", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>, color: "bg-blue-100 border-blue-300 text-blue-700", dot: "bg-blue-500", mockup: "tasks" },
+    { label: "Submit Review", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, color: "bg-violet-100 border-violet-300 text-violet-700", dot: "bg-violet-500", mockup: "eval" },
+    { label: "QA Approval", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>, color: "bg-emerald-100 border-emerald-300 text-emerald-700", dot: "bg-emerald-500", mockup: "approval" },
+    { label: "Export Data", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>, color: "bg-amber-100 border-amber-300 text-amber-700", dot: "bg-amber-500", mockup: "export" },
   ];
+
   const [active, setActive] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
   useEffect(() => {
-    const t = setInterval(() => setActive(p => (p + 1) % steps.length), 1800);
+    const t = setInterval(() => setActive(p => (p + 1) % steps.length), 2500);
     return () => clearInterval(t);
   }, []);
+
+  const handleClick = (i: number) => {
+    if (i !== active) {
+      setIsAnimating(true);
+      setActive(i);
+      setTimeout(() => setIsAnimating(false), 400);
+    }
+  };
+
+  const mockups: Record<string, React.ReactNode> = {
+    project: <div className="bg-white rounded-lg border border-indigo-100 p-3"><div className="flex items-center gap-2 mb-2"><div className="w-6 h-6 rounded bg-indigo-500 flex items-center justify-center"><svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg></div><span className="text-xs font-semibold text-slate-800">Safety Benchmark Q2</span></div><p className="text-[9px] text-slate-400">24 tasks - Created just now</p></div>,
+    tasks: <div className="bg-white rounded-lg border border-blue-100 p-3 space-y-2">{["Toxicity Eval #1", "Coherence Check #2", "Safety Review #3"].map((t, i) => (<div key={i} className="flex items-center gap-2 text-[10px]"><div className={`w-1.5 h-1.5 rounded-full ${i === 0 ? "bg-blue-500 animate-pulse" : "bg-slate-300"}`} /><span className="text-slate-600">{t}</span></div>))}</div>,
+    eval: <div className="bg-white rounded-lg border border-violet-100 p-3"><div className="flex items-center justify-between mb-2"><span className="text-xs font-semibold text-slate-800">Evaluation #47</span><span className="text-[9px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded">Submitted</span></div><div className="space-y-1"><div className="flex justify-between text-[9px]"><span className="text-slate-400">Score</span><span className="font-bold text-slate-700">4.2/5</span></div><div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full w-[84%] bg-violet-500 rounded-full" /></div></div></div>,
+    approval: <div className="bg-white rounded-lg border border-emerald-100 p-3"><div className="flex items-center gap-2 mb-2"><div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center"><svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg></div><span className="text-xs font-semibold text-slate-800">Approved</span></div><p className="text-[9px] text-slate-400">by Admin - 2 min ago</p></div>,
+    export: <div className="bg-white rounded-lg border border-amber-100 p-3"><div className="flex items-center gap-2 mb-2"><svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg><span className="text-xs font-semibold text-slate-800">Export Ready</span></div><p className="text-[9px] text-slate-400">CSV: 2.4 MB - JSON: 1.8 MB</p></div>,
+  };
+
   return (
-    <div className="relative flex flex-col gap-3">
-      {steps.map((s, i) => (
-        <div key={i} className="flex items-center gap-3">
-          {/* Connector */}
-          <div className="flex flex-col items-center flex-shrink-0 w-8">
-            <div className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center text-base transition-all duration-500 ${s.color} ${active === i ? "scale-110 shadow-md" : "opacity-60"}`}>
-              {s.icon}
+    <div>
+      <div className="flex flex-col gap-2 mb-4">
+        {steps.map((s, i) => (
+          <button
+            key={i}
+            onClick={() => handleClick(i)}
+            className={`flex items-center gap-2 rounded-lg p-2 transition-all duration-300 text-left ${active === i ? `${s.color} shadow-sm` : "border border-transparent hover:bg-slate-100 text-slate-500"}`}
+          >
+            <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-300 ${active === i ? "bg-white/50" : "bg-slate-100"}`}>
+              <span className={active === i ? "text-current" : "text-slate-400"}>{s.icon}</span>
             </div>
-            {i < steps.length - 1 && (
-              <div className={`w-0.5 h-3 mt-1 rounded-full transition-all duration-500 ${active > i ? s.dot : "bg-slate-200"}`} />
-            )}
-          </div>
-          <div className={`flex-1 rounded-xl border px-4 py-2.5 transition-all duration-500 ${active === i ? `${s.color} shadow-sm` : "border-slate-100 bg-white text-slate-500 opacity-70"}`}>
-            <p className={`text-xs font-semibold transition-all duration-300 ${active === i ? "" : "text-slate-500"}`}>{s.label}</p>
-            {active === i && <p className="text-[10px] font-mono mt-0.5 opacity-70">Step {i + 1} of {steps.length}</p>}
-          </div>
-          {active === i && (
-            <div className={`w-2 h-2 rounded-full animate-pulse flex-shrink-0 ${s.dot}`} />
-          )}
-        </div>
-      ))}
+            <span className={`text-xs font-medium flex-1 ${active === i ? "" : "text-slate-500"}`}>{s.label}</span>
+            {active === i && <div className={`w-1.5 h-1.5 rounded-full ${s.dot} animate-pulse`} />}
+          </button>
+        ))}
+      </div>
+      <div className={`mt-4 pt-4 border-t border-slate-200 transition-all duration-400 ${isAnimating ? "opacity-50 scale-95" : "opacity-100 scale-100"}`}>
+        {mockups[steps[active].mockup]}
+      </div>
     </div>
   );
 }
@@ -932,17 +952,19 @@ export default function LandingPage() {
                 <span className="gradient-headline">AI evaluation pipelines</span>
               </h2>
               <p className="body text-slate-500 leading-relaxed mb-8 text-base">
-                A structured five-step workflow that mirrors real AI operations: project creation, task assignment, evaluation, QA review, and analytics export.
+                A structured workflow that handles real AI ops work. Create projects, assign tasks, run evaluations, review results, and export insights.
               </p>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {[
-                  { label: "Structured Workflows", desc: "Projects represent AI evaluation batches; tasks map to individual review items", icon: "🗂" },
-                  { label: "Domain-Aware Tasks", desc: "Evaluate toxicity, validate reasoning chains, benchmark prompt relevance", icon: "🔬" },
-                  { label: "Two-Tier Review", desc: "Reviewers submit; admins approve, reject, or escalate with full audit trail", icon: "✅" },
-                  { label: "Analytics Export", desc: "Recharts dashboards + CSV export for downstream model training pipelines", icon: "📊" },
+                  { label: "Organize Work", desc: "Projects group related evaluation tasks together", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg> },
+                  { label: "Assign Tasks", desc: "Reviewers get their own task queues to work through", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg> },
+                  { label: "Run Reviews", desc: "Submit evaluations with scores and detailed feedback", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+                  { label: "Export Data", desc: "Pull reports or push data to your training pipeline", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-3 p-4 rounded-xl hover:bg-slate-50 transition-colors group cursor-default">
-                    <span className="text-lg flex-shrink-0 mt-0.5">{item.icon}</span>
+                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-all duration-300 group cursor-pointer border border-transparent hover:border-indigo-100">
+                    <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center text-violet-600 flex-shrink-0 group-hover:bg-violet-100 group-hover:scale-110 transition-all duration-300">
+                      {item.icon}
+                    </div>
                     <div>
                       <p className="display font-semibold text-slate-900 text-sm mb-0.5 group-hover:text-indigo-600 transition-colors">{item.label}</p>
                       <p className="body text-slate-400 text-xs leading-relaxed">{item.desc}</p>

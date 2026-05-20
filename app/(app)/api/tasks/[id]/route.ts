@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { auth } from "@/lib/auth"
 import { tasks } from "@/db/schema"
 import { eq } from "drizzle-orm"
+import { createActivityLog } from "@/lib/activity"
 
 const updateTaskSchema = z.object({
   title: z.string().min(1).optional(),
@@ -70,6 +71,31 @@ export async function PATCH(
     .where(eq(tasks.id, id))
     .returning()
 
+  if (rest.assignedToId !== undefined) {
+    await createActivityLog({
+      actionType: "task_assigned",
+      performedById: session.user.id,
+      targetEntity: updated.title,
+      targetId: updated.id,
+      metadata: { assignedToId: updated.assignedToId },
+    })
+  } else if (rest.status) {
+    await createActivityLog({
+      actionType: "task_status_changed",
+      performedById: session.user.id,
+      targetEntity: updated.title,
+      targetId: updated.id,
+      metadata: { newStatus: rest.status },
+    })
+  } else {
+    await createActivityLog({
+      actionType: "task_updated",
+      performedById: session.user.id,
+      targetEntity: updated.title,
+      targetId: updated.id,
+    })
+  }
+
   return NextResponse.json(updated)
 }
 
@@ -90,6 +116,13 @@ export async function DELETE(
   }
 
   await db.delete(tasks).where(eq(tasks.id, id))
+
+  await createActivityLog({
+    actionType: "task_deleted",
+    performedById: session.user.id,
+    targetEntity: existing.title,
+    targetId: id,
+  })
 
   return NextResponse.json({ success: true })
 }

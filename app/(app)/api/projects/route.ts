@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth"
 import { projects } from "@/db/schema"
 import { eq, ilike, asc, desc } from "drizzle-orm"
 import { createId } from "@paralleldrive/cuid2"
+import { createActivityLog } from "@/lib/activity"
 
 const createProjectSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -61,6 +62,13 @@ export async function POST(request: NextRequest) {
       createdById: session.user.id,
     })
     .returning()
+
+  await createActivityLog({
+    actionType: "project_created",
+    performedById: session.user.id,
+    targetEntity: name,
+    targetId: project.id,
+  })
 
   return NextResponse.json(project, { status: 201 })
 }

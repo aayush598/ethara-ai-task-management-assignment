@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { auth } from "@/lib/auth"
-import { activityLogs } from "@/db/schema"
-import { desc } from "drizzle-orm"
+import { activityLogs, users } from "@/db/schema"
+import { desc, eq, sql } from "drizzle-orm"
 
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers })
@@ -16,14 +16,25 @@ export async function GET(request: NextRequest) {
   const offset = (page - 1) * limit
 
   const [totalResult] = await db
-    .select({ count: db.$count(activityLogs) })
+    .select({ count: sql<number>`count(*)` })
     .from(activityLogs)
 
-  const total = totalResult?.count ?? 0
+  const total = Number(totalResult?.count ?? 0)
 
   const logs = await db
-    .select()
+    .select({
+      id: activityLogs.id,
+      actionType: activityLogs.actionType,
+      performedById: activityLogs.performedById,
+      targetEntity: activityLogs.targetEntity,
+      targetId: activityLogs.targetId,
+      metadata: activityLogs.metadata,
+      createdAt: activityLogs.createdAt,
+      performerName: users.name,
+      performerImage: users.image,
+    })
     .from(activityLogs)
+    .leftJoin(users, eq(activityLogs.performedById, users.id))
     .orderBy(desc(activityLogs.createdAt))
     .limit(limit)
     .offset(offset)

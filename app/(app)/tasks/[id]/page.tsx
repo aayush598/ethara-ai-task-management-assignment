@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogHeader, DialogContent, DialogFooter } from "@/components/ui/dialog"
 import { cn, formatDate, formatDateTime, timeAgo, getInitials } from "@/lib/utils"
 import {
-  ArrowLeft, Loader2, AlertTriangle, MessageSquare, Send, Edit3, Star,
+  ArrowLeft, Loader2, AlertTriangle, MessageSquare, Send, Edit3, Star, Trash2,
 } from "lucide-react"
 
 interface TaskDetail {
@@ -32,6 +32,14 @@ interface TaskDetail {
   dueDate: string | null
   createdAt: string
   updatedAt: string
+}
+
+interface UserInfo {
+  id: string
+  name: string
+  email: string
+  image?: string | null
+  role: string
 }
 
 interface Comment {
@@ -189,10 +197,14 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const [isAdmin, setIsAdmin] = useState(false)
   const [currentUserName, setCurrentUserName] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [users, setUsers] = useState<UserInfo[]>([])
 
   const [editOpen, setEditOpen] = useState(false)
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
+
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const [commentText, setCommentText] = useState("")
   const [commentSubmitting, setCommentSubmitting] = useState(false)
@@ -220,9 +232,19 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         setComments(Array.isArray(data) ? data : [])
       }
     } catch {
-      // Comments failing is non-fatal
     }
   }, [id])
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const res = await fetch("/api/users")
+      if (res.ok) {
+        const data = await res.json()
+        setUsers(Array.isArray(data) ? data : [])
+      }
+    } catch {
+    }
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -238,8 +260,22 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
       }
     })
 
-    Promise.all([fetchTask(), fetchComments()]).finally(() => setLoading(false))
-  }, [fetchTask, fetchComments])
+    Promise.all([fetchTask(), fetchComments(), fetchUsers()]).finally(() => setLoading(false))
+  }, [fetchTask, fetchComments, fetchUsers])
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete task")
+      router.push(`/projects/${task?.projectId || "/tasks"}`)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setDeleting(false)
+      setDeleteConfirmOpen(false)
+    }
+  }
 
   const handleAddComment = async () => {
     if (!commentText.trim()) return
@@ -259,6 +295,11 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     } finally {
       setCommentSubmitting(false)
     }
+  }
+
+  const getUserName = (userId: string) => {
+    const u = users.find(u => u.id === userId)
+    return u?.name || null
   }
 
   if (notFound) {
@@ -376,17 +417,24 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 <h1 className="display text-xl font-bold text-slate-900 leading-snug">
                   {task.title}
                 </h1>
-                {isAdmin && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setEditOpen(true)}
-                    className="flex-shrink-0"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 mr-1" />
-                    Edit
-                  </Button>
-                )}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => setDeleteConfirmOpen(true)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1" />
+                      Delete
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setEditOpen(true)}
+                    >
+                      <Edit3 className="w-3.5 h-3.5 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -435,13 +483,13 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 ) : (
                   comments.map((comment) => (
                     <div key={comment.id} className="flex gap-3">
-                      <UserAvatar id={comment.userId} />
+                      <UserAvatar name={getUserName(comment.userId)} id={comment.userId} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-[11px] font-semibold text-slate-700 font-mono">
                             {comment.userId === currentUserId
                               ? (currentUserName || "You")
-                              : getInitials(comment.userId)
+                              : (getUserName(comment.userId) || getInitials(comment.userId))
                             }
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono">
@@ -534,9 +582,9 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                   {task.assignedToId ? (
                     <div className="flex items-center gap-2 justify-end">
                       <span className="text-xs font-mono text-slate-600 truncate max-w-[120px]">
-                        {getInitials(task.assignedToId)}
+                        {getUserName(task.assignedToId) || getInitials(task.assignedToId)}
                       </span>
-                      <UserAvatar id={task.assignedToId} />
+                      <UserAvatar name={getUserName(task.assignedToId)} id={task.assignedToId} />
                     </div>
                   ) : (
                     <span className="text-xs text-slate-400 font-mono">Unassigned</span>
@@ -548,10 +596,10 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                     <span className="text-xs font-mono text-slate-600 truncate max-w-[120px]">
                       {task.createdById === currentUserId
                         ? (currentUserName || "You")
-                        : getInitials(task.createdById)
+                        : (getUserName(task.createdById) || getInitials(task.createdById))
                       }
                     </span>
-                    <UserAvatar id={task.createdById} />
+                    <UserAvatar name={getUserName(task.createdById)} id={task.createdById} />
                   </div>
                 </DetailRow>
 
@@ -578,6 +626,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
+      {/* Edit Dialog */}
       <Dialog open={editOpen} onClose={() => setEditOpen(false)}>
         <DialogHeader>
           <div className="flex items-center gap-3">
@@ -593,6 +642,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         <DialogContent>
           <EditTaskForm
             task={task}
+            users={users}
             onSubmit={async (data) => {
               setEditSubmitting(true)
               setEditError(null)
@@ -604,7 +654,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 })
                 if (!res.ok) {
                   const err = await res.json().catch(() => null)
-                  throw new Error(err?.message || "Failed to update task")
+                  throw new Error(err?.error?.formErrors?.[0] || err?.error || "Failed to update task")
                 }
                 const updated = await res.json()
                 setTask(updated)
@@ -624,18 +674,50 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
           />
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+        <DialogHeader>
+          <h2 className="text-lg font-bold text-slate-900">Delete Task</h2>
+        </DialogHeader>
+        <DialogContent>
+          <p className="text-sm text-slate-600">
+            Are you sure you want to delete this task? This action cannot be undone.
+          </p>
+        </DialogContent>
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => setDeleteConfirmOpen(false)} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDelete} disabled={deleting}>
+            {deleting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4 mr-1.5" />
+                Delete Task
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </div>
   )
 }
 
 function EditTaskForm({
   task,
+  users,
   onSubmit,
   submitting,
   error,
   onCancel,
 }: {
   task: TaskDetail
+  users: UserInfo[]
   onSubmit: (data: Record<string, unknown>) => Promise<void>
   submitting: boolean
   error: string | null
@@ -650,6 +732,11 @@ function EditTaskForm({
   const [dueDate, setDueDate] = useState(
     task.dueDate ? task.dueDate.slice(0, 16) : ""
   )
+
+  const userOptions = [
+    { value: "", label: "Unassigned" },
+    ...users.map(u => ({ value: u.id, label: `${u.name} (${u.email})` })),
+  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -710,10 +797,10 @@ function EditTaskForm({
         onChange={(e) => setQaStatus(e.target.value)}
       />
 
-      <Input
-        label="Assigned To (User ID)"
+      <Select
+        label="Assigned To"
         id="edit-assignee"
-        placeholder="User ID"
+        options={userOptions}
         value={assignedToId}
         onChange={(e) => setAssignedToId(e.target.value)}
       />

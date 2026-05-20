@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth"
 import { tasks } from "@/db/schema"
 import { eq, and, ilike, asc, desc } from "drizzle-orm"
 import { createId } from "@paralleldrive/cuid2"
+import { createActivityLog } from "@/lib/activity"
 
 const createTaskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -78,6 +79,14 @@ export async function POST(request: NextRequest) {
       dueDate: dueDate ? new Date(dueDate) : undefined,
     })
     .returning()
+
+  await createActivityLog({
+    actionType: "task_created",
+    performedById: session.user.id,
+    targetEntity: task.title,
+    targetId: task.id,
+    metadata: { projectId: task.projectId },
+  })
 
   return NextResponse.json(task, { status: 201 })
 }

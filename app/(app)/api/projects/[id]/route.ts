@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { auth } from "@/lib/auth"
 import { projects } from "@/db/schema"
 import { eq } from "drizzle-orm"
+import { createActivityLog } from "@/lib/activity"
 
 const updateProjectSchema = z.object({
   name: z.string().min(1).optional(),
@@ -57,6 +58,13 @@ export async function PATCH(
     .where(eq(projects.id, id))
     .returning()
 
+  await createActivityLog({
+    actionType: "project_updated",
+    performedById: session.user.id,
+    targetEntity: updated.name,
+    targetId: updated.id,
+  })
+
   return NextResponse.json(updated)
 }
 
@@ -77,6 +85,13 @@ export async function DELETE(
   }
 
   await db.delete(projects).where(eq(projects.id, id))
+
+  await createActivityLog({
+    actionType: "project_deleted",
+    performedById: session.user.id,
+    targetEntity: existing.name,
+    targetId: id,
+  })
 
   return NextResponse.json({ success: true })
 }

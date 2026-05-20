@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth"
 import { comments, tasks } from "@/db/schema"
 import { eq, asc } from "drizzle-orm"
 import { createId } from "@paralleldrive/cuid2"
+import { createActivityLog } from "@/lib/activity"
 
 const createCommentSchema = z.object({
   content: z.string().min(1, "Content is required"),
@@ -66,6 +67,13 @@ export async function POST(
       userId: session.user.id,
     })
     .returning()
+
+  await createActivityLog({
+    actionType: "comment_added",
+    performedById: session.user.id,
+    targetEntity: task.title,
+    targetId: task.id,
+  })
 
   return NextResponse.json(comment, { status: 201 })
 }

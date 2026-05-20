@@ -14,6 +14,8 @@ interface ActivityLog {
   id: string
   actionType: string
   performedById: string
+  performerName: string | null
+  performerImage: string | null
   targetEntity: string | null
   targetId: string | null
   metadata: Record<string, unknown> | null
@@ -198,7 +200,7 @@ export default function ActivityPage() {
           <div className="space-y-2">
             {logs.map((log, idx) => {
               const variant = badgeVariant(log.actionType)
-              const initials = getInitials(log.performedById)
+              const initials = log.performerName ? getInitials(log.performerName) : getInitials(log.performedById)
               const isExpanded = expandedIds.has(log.id)
               const hasMetadata = log.metadata && Object.keys(log.metadata).length > 0
 
@@ -219,7 +221,7 @@ export default function ActivityPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2 flex-wrap min-w-0">
                           <span className="text-sm font-semibold text-slate-900 truncate max-w-[160px]">
-                            {log.performedById}
+                            {log.performerName || log.performedById}
                           </span>
                           <span className="text-sm text-slate-500 whitespace-nowrap">
                             {actionLabel(log.actionType)}

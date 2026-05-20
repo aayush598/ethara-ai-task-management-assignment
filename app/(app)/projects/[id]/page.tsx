@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { use, useOptimistic } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -29,11 +28,21 @@ const typeColors: Record<string, "rose" | "emerald" | "blue" | "violet"> = {
   coherence: "violet",
 }
 
-const severityColors: Record<string, "emerald" | "amber" | "rose"> = {
-  low: "emerald",
-  medium: "amber",
-  high: "rose",
-  critical: "rose",
+interface Member {
+  id: string
+  projectId: string
+  userId: string
+  role: string
+  joinedAt: string
+  userName: string | null
+  userEmail: string | null
+  userImage: string | null
+}
+
+interface UserInfo {
+  id: string
+  name: string
+  email: string
 }
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -41,11 +50,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const router = useRouter()
   const [project, setProject] = useState<any>(null)
   const [tasks, setTasks] = useState<any[]>([])
+  const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [tasksLoading, setTasksLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showEdit, setShowEdit] = useState(false)
   const [showTask, setShowTask] = useState(false)
+  const [showAddMember, setShowAddMember] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [editName, setEditName] = useState("")
   const [editDesc, setEditDesc] = useState("")
@@ -54,6 +65,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [taskType, setTaskType] = useState("")
   const [taskSeverity, setTaskSeverity] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [allUsers, setAllUsers] = useState<UserInfo[]>([])
+  const [newMemberUserId, setNewMemberUserId] = useState("")
+  const [addingMember, setAddingMember] = useState(false)
 
   const fetchProject = useCallback(async () => {
     try {
@@ -81,8 +95,36 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     finally { setTasksLoading(false) }
   }, [id])
 
-  useEffect(() => { fetchProject(); fetchTasks() }, [fetchProject, fetchTasks])
-  useEffect(() => { authClient.getSession().then(res => setUser(res.data?.user)) }, [])
+  const fetchMembers = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/projects/${id}/members`)
+      if (res.ok) {
+        const data = await res.json()
+        setMembers(data)
+      }
+    } catch { /* ignore */ }
+  }, [id])
+
+  const fetchAllUsers = useCallback(async () => {
+    try {
+      const res = await fetch("/api/users")
+      if (res.ok) {
+        const data = await res.json()
+        setAllUsers(Array.isArray(data) ? data : [])
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => {
+    fetchProject()
+    fetchTasks()
+    fetchMembers()
+    fetchAllUsers()
+  }, [fetchProject, fetchTasks, fetchMembers, fetchAllUsers])
+
+  useEffect(() => {
+    authClient.getSession().then(res => setUser(res.data?.user))
+  }, [])
 
   const handleEdit = async () => {
     setSubmitting(true)
@@ -134,6 +176,34 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     } catch { toast.error("Something went wrong") }
   }
 
+  const handleAddMember = async () => {
+    if (!newMemberUserId) return
+    setAddingMember(true)
+    try {
+      const res = await fetch(`/api/projects/${id}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: newMemberUserId }),
+      })
+      if (!res.ok) { toast.error("Failed to add member"); return }
+      setShowAddMember(false)
+      setNewMemberUserId("")
+      toast.success("Member added")
+      fetchMembers()
+    } catch { toast.error("Something went wrong") }
+    finally { setAddingMember(false) }
+  }
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!confirm("Remove this member from the project?")) return
+    try {
+      const res = await fetch(`/api/projects/${id}/members?memberId=${memberId}`, { method: "DELETE" })
+      if (!res.ok) { toast.error("Failed to remove member"); return }
+      toast.success("Member removed")
+      fetchMembers()
+    } catch { toast.error("Something went wrong") }
+  }
+
   if (loading) return (
     <div className="space-y-6">
       <div className="h-8 w-48 bg-slate-200 rounded-lg animate-pulse" />
@@ -159,9 +229,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     </div>
   )
 
-  const isAdmin = (user as any)?.role === "admin"
+  const userRole = (user as any)?.role
+  const isProjectCreator = project?.createdById === (user as any)?.id
+  const canManage = userRole === "admin" || isProjectCreator
   const statusCounts = { pending: 0, in_review: 0, approved: 0, rejected: 0 }
   tasks.forEach(t => { if (t.status in statusCounts) statusCounts[t.status as keyof typeof statusCounts]++ })
+
+  const nonMemberUsers = allUsers.filter(u => !members.some(m => m.userId === u.id))
 
   return (
     <div className="space-y-6">
@@ -185,11 +259,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </svg>
             Add Task
           </Button>
-          {isAdmin && (
-            <>
-              <Button variant="secondary" size="sm" onClick={() => setShowEdit(true)}>Edit</Button>
-              <Button variant="danger" size="sm" onClick={handleDelete}>Delete</Button>
-            </>
+          <Button variant="secondary" size="sm" onClick={() => setShowEdit(true)}>Edit</Button>
+          {canManage && (
+            <Button variant="danger" size="sm" onClick={handleDelete}>Delete</Button>
           )}
         </div>
       </div>
@@ -263,6 +335,62 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         </CardContent>
       </Card>
 
+      {/* Members section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-slate-900">Team Members</h2>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs text-slate-400">{members.length} member{members.length !== 1 ? "s" : ""}</span>
+              <Button size="sm" variant="secondary" onClick={() => setShowAddMember(true)}>
+                  <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Member
+                </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {members.length === 0 ? (
+            <div className="text-center py-8 text-slate-400">
+              <p className="text-sm font-medium text-slate-500">No team members yet</p>
+              <p className="text-xs mt-1">Add members to collaborate on this project.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {members.map((member) => (
+                <div key={member.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center text-[10px] font-bold text-white">
+                      {member.userName ? getInitials(member.userName) : "U"}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{member.userName || "Unknown User"}</p>
+                      <p className="text-xs text-slate-400">{member.userEmail || ""}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="slate">{member.role}</Badge>
+                    <span className="text-[10px] text-slate-400 font-mono">{timeAgo(member.joinedAt)}</span>
+                    {member.userId !== (user as any)?.id && (
+                      <button
+                        onClick={() => handleRemoveMember(member.id)}
+                        className="text-slate-400 hover:text-rose-500 transition-colors p-1"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Edit Dialog */}
       <Dialog open={showEdit} onClose={() => setShowEdit(false)}>
         <DialogHeader><h2 className="text-lg font-bold text-slate-900">Edit Project</h2></DialogHeader>
@@ -302,6 +430,27 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         <DialogFooter>
           <Button variant="secondary" onClick={() => setShowTask(false)}>Cancel</Button>
           <Button onClick={handleCreateTask} disabled={submitting || !taskTitle}>{submitting ? "Creating..." : "Create Task"}</Button>
+        </DialogFooter>
+      </Dialog>
+
+      {/* Add Member Dialog */}
+      <Dialog open={showAddMember} onClose={() => setShowAddMember(false)}>
+        <DialogHeader><h2 className="text-lg font-bold text-slate-900">Add Team Member</h2></DialogHeader>
+        <DialogContent className="space-y-4">
+          <Select
+            label="Select User"
+            id="new-member"
+            placeholder="Choose a user to add"
+            value={newMemberUserId}
+            onChange={(e) => setNewMemberUserId(e.target.value)}
+            options={nonMemberUsers.map(u => ({ value: u.id, label: `${u.name} (${u.email})` }))}
+          />
+        </DialogContent>
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => setShowAddMember(false)}>Cancel</Button>
+          <Button onClick={handleAddMember} disabled={addingMember || !newMemberUserId}>
+            {addingMember ? "Adding..." : "Add Member"}
+          </Button>
         </DialogFooter>
       </Dialog>
     </div>

@@ -12,7 +12,7 @@ import { Dialog, DialogHeader, DialogContent, DialogFooter } from "@/components/
 import { cn, formatDate, getInitials } from "@/lib/utils"
 import {
   FolderKanban, Search, Plus, Loader2, AlertTriangle, FolderOpen,
-  Layers, Calendar,
+  Layers, Calendar, Edit3, Trash2, MoreVertical,
 } from "lucide-react"
 
 /* ── Types ── */
@@ -71,6 +71,19 @@ export default function ProjectsPage() {
   const [formDescription, setFormDescription] = useState("")
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+
+  /* Edit state */
+  const [editTarget, setEditTarget] = useState<Project | null>(null)
+  const [editName, setEditName] = useState("")
+  const [editDesc, setEditDesc] = useState("")
+  const [editSubmitting, setEditSubmitting] = useState(false)
+
+  /* Delete state */
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  /* Dropdown state */
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
 
   /* ── Fetch projects ── */
   const fetchProjects = useCallback(async () => {
@@ -138,6 +151,52 @@ export default function ProjectsPage() {
       setFormError(err instanceof Error ? err.message : "An error occurred")
     } finally {
       setFormSubmitting(false)
+    }
+  }
+
+  /* ── Edit project ── */
+  const handleEditOpen = (project: Project) => {
+    setEditTarget(project)
+    setEditName(project.name)
+    setEditDesc(project.description || "")
+    setOpenDropdownId(null)
+  }
+
+  const handleEditSubmit = async () => {
+    if (!editTarget || !editName.trim()) return
+    setEditSubmitting(true)
+    try {
+      const res = await fetch(`/api/projects/${editTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName.trim(), description: editDesc.trim() || null }),
+      })
+      if (!res.ok) throw new Error()
+      setEditTarget(null)
+      fetchProjects()
+    } catch {
+    } finally {
+      setEditSubmitting(false)
+    }
+  }
+
+  /* ── Delete project ── */
+  const handleDeleteOpen = (project: Project) => {
+    setDeleteTarget(project)
+    setOpenDropdownId(null)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/projects/${deleteTarget.id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error()
+      setDeleteTarget(null)
+      fetchProjects()
+    } catch {
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -255,6 +314,23 @@ export default function ProjectsPage() {
             onErrorClear={() => setFormError(null)}
             onSubmit={handleCreate}
           />
+          <EditProjectDialog
+            open={!!editTarget}
+            onClose={() => setEditTarget(null)}
+            name={editName}
+            onNameChange={setEditName}
+            desc={editDesc}
+            onDescChange={setEditDesc}
+            submitting={editSubmitting}
+            onSubmit={handleEditSubmit}
+          />
+          <DeleteProjectDialog
+            open={!!deleteTarget}
+            onClose={() => setDeleteTarget(null)}
+            name={deleteTarget?.name || ""}
+            submitting={deleting}
+            onConfirm={handleDeleteConfirm}
+          />
         </div>
       )
     }
@@ -283,22 +359,39 @@ export default function ProjectsPage() {
           </Button>
         </div>
         <NewProjectDialog
-          open={dialogOpen}
-          onClose={() => setDialogOpen(false)}
-          name={formName}
-          onNameChange={setFormName}
-          description={formDescription}
-          onDescriptionChange={setFormDescription}
-          submitting={formSubmitting}
-          error={formError}
-          onErrorClear={() => setFormError(null)}
-          onSubmit={handleCreate}
-        />
-      </div>
-    )
-  }
+            open={dialogOpen}
+            onClose={() => setDialogOpen(false)}
+            name={formName}
+            onNameChange={setFormName}
+            description={formDescription}
+            onDescriptionChange={setFormDescription}
+            submitting={formSubmitting}
+            error={formError}
+            onErrorClear={() => setFormError(null)}
+            onSubmit={handleCreate}
+          />
+          <EditProjectDialog
+            open={!!editTarget}
+            onClose={() => setEditTarget(null)}
+            name={editName}
+            onNameChange={setEditName}
+            desc={editDesc}
+            onDescChange={setEditDesc}
+            submitting={editSubmitting}
+            onSubmit={handleEditSubmit}
+          />
+          <DeleteProjectDialog
+            open={!!deleteTarget}
+            onClose={() => setDeleteTarget(null)}
+            name={deleteTarget?.name || ""}
+            submitting={deleting}
+            onConfirm={handleDeleteConfirm}
+          />
+        </div>
+      )
+    }
 
-  /* ── Main Content ── */
+    /* ── Main Content ── */
   return (
     <div className="space-y-6">
       <HeaderContent
@@ -312,45 +405,79 @@ export default function ProjectsPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((project) => (
-          <Card
-            key={project.id}
-            hover
-            className="cursor-pointer group"
-            onClick={() => router.push(`/projects/${project.id}`)}
-          >
-            <CardContent>
-              <div className="space-y-3">
-                <h3 className="display text-sm font-semibold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors line-clamp-2">
-                  {project.name}
-                </h3>
+          <Card key={project.id} className="relative group">
+            <CardContent className="p-0">
+              <div
+                className="p-5 cursor-pointer"
+                onClick={() => router.push(`/projects/${project.id}`)}
+              >
+                <div className="space-y-3">
+                  <h3 className="display text-sm font-semibold text-slate-900 leading-snug hover:text-indigo-600 transition-colors line-clamp-2">
+                    {project.name}
+                  </h3>
 
-                {project.description && (
-                  <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
-                    {project.description}
-                  </p>
+                  {project.description && (
+                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
+                      {project.description}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-3 pt-1">
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
+                      <Layers className="w-3 h-3" />
+                      <span>{project.taskCount !== null ? project.taskCount : "—"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
+                      <Calendar className="w-3 h-3" />
+                      <span>{formatDate(project.createdAt)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                    <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-[8px] font-bold text-indigo-700">
+                      {project.createdByName
+                        ? getInitials(project.createdByName)
+                        : getInitials(project.createdBy)}
+                    </div>
+                    <span className="text-[11px] text-slate-500 font-mono truncate">
+                      {project.createdByName || project.createdBy}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card Actions */}
+              <div className="absolute top-2 right-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setOpenDropdownId(openDropdownId === project.id ? null : project.id)
+                  }}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+                {openDropdownId === project.id && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setOpenDropdownId(null)} />
+                    <div className="absolute right-0 top-10 z-50 w-40 rounded-xl border border-slate-200 bg-white shadow-xl py-1.5">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEditOpen(project) }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 transition-colors"
+                      >
+                        <Edit3 className="w-4 h-4 text-slate-400" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteOpen(project) }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
+                    </div>
+                  </>
                 )}
-
-                <div className="flex items-center gap-3 pt-1">
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
-                    <Layers className="w-3 h-3" />
-                    <span>{project.taskCount !== null ? project.taskCount : "—"}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
-                    <Calendar className="w-3 h-3" />
-                    <span>{formatDate(project.createdAt)}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
-                  <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-[8px] font-bold text-indigo-700">
-                    {project.createdByName
-                      ? getInitials(project.createdByName)
-                      : getInitials(project.createdBy)}
-                  </div>
-                  <span className="text-[11px] text-slate-500 font-mono truncate">
-                    {project.createdByName || project.createdBy}
-                  </span>
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -368,6 +495,24 @@ export default function ProjectsPage() {
         error={formError}
         onErrorClear={() => setFormError(null)}
         onSubmit={handleCreate}
+      />
+
+      <EditProjectDialog
+        open={!!editTarget}
+        onClose={() => setEditTarget(null)}
+        name={editName}
+        onNameChange={setEditName}
+        desc={editDesc}
+        onDescChange={setEditDesc}
+        submitting={editSubmitting}
+        onSubmit={handleEditSubmit}
+      />
+      <DeleteProjectDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        name={deleteTarget?.name || ""}
+        submitting={deleting}
+        onConfirm={handleDeleteConfirm}
       />
     </div>
   )
@@ -427,6 +572,73 @@ function HeaderContent({
         </Button>
       </div>
     </div>
+  )
+}
+
+function EditProjectDialog({
+  open,
+  onClose,
+  name,
+  onNameChange,
+  desc,
+  onDescChange,
+  submitting,
+  onSubmit,
+}: {
+  open: boolean
+  onClose: () => void
+  name: string
+  onNameChange: (v: string) => void
+  desc: string
+  onDescChange: (v: string) => void
+  submitting: boolean
+  onSubmit: () => void
+}) {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogHeader><h2 className="text-lg font-bold text-slate-900">Edit Project</h2></DialogHeader>
+      <DialogContent className="space-y-4">
+        <Input label="Project Name" id="edit-name" value={name} onChange={(e) => onNameChange(e.target.value)} />
+        <Textarea label="Description" id="edit-desc" value={desc} onChange={(e) => onDescChange(e.target.value)} />
+      </DialogContent>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button onClick={onSubmit} disabled={submitting}>
+          {submitting ? "Saving..." : "Save Changes"}
+        </Button>
+      </DialogFooter>
+    </Dialog>
+  )
+}
+
+function DeleteProjectDialog({
+  open,
+  onClose,
+  name,
+  submitting,
+  onConfirm,
+}: {
+  open: boolean
+  onClose: () => void
+  name: string
+  submitting: boolean
+  onConfirm: () => void
+}) {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogHeader><h2 className="text-lg font-bold text-slate-900">Delete Project</h2></DialogHeader>
+      <DialogContent>
+        <p className="text-sm text-slate-600">
+          Are you sure you want to delete <strong>{name}</strong>? This will also delete all tasks and data associated with it. This cannot be undone.
+        </p>
+      </DialogContent>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose} disabled={submitting}>Cancel</Button>
+        <Button variant="danger" onClick={onConfirm} disabled={submitting}>
+          {submitting ? "Deleting..." : "Delete Project"}
+        </Button>
+      </DialogFooter>
+    </Dialog>
   )
 }
 
